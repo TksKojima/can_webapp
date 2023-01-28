@@ -1,6 +1,11 @@
+
+
 <template>
   <div class="about">
         {{timecnt}} {{connect_status}}
+
+          <ToggleButton v-model="toggleValue"></ToggleButton>
+
           <table class="table table-hover" aria-describedby="listhelp">
               <thead>
 
@@ -44,11 +49,19 @@
 
 
   </div>
+
+  
 </template>
 
 
 <script>
+//import ToggleButton from 'vue-js-toggle-button'
+import ToggleButton from './ToggleBtn.vue'
+
 export default {
+  components: {
+    ToggleButton
+  },  
   data() {
     return {
             selectItem: { name: "", mac: "" },
@@ -58,14 +71,9 @@ export default {
 
             onrec_time:0,
                         
-            can_msgs_sort:[],
-            can_id_array:[],
             timecnt:0,
                 //{ id: 0, dlc: 8, msg: [0,1,2,3,4,5,6,7] },
             myStyle: 'RGB(10,0,200)',
-            exist_list:[],
-            id_list:[],
-            id_list_num:0,
             id_num:0,
             sort_direction_id: 1,
             sort_direction_dlc:1,
@@ -74,8 +82,8 @@ export default {
             sort_target: -1,
             sort_cnt:0,
 
-            connect_status:-1
-
+            connect_status:-1,
+            toggleValue: false
 
     }
   },
@@ -85,7 +93,7 @@ mounted() {
               console.log("Starting connection to WebSocket Server")
 
               for(let i=0; i<0x7ff; i++){
-                this.exist_list[i] = -1;
+                //this.exist_list[i] = -1;
                 //this.id_list = 0;
                 this.can_msg.id = -1;
                 this.can_msgs[i] =  Object.assign( {}, this.can_msg );
@@ -93,29 +101,15 @@ mounted() {
               
               this.websocketconnect();
 
-              // this.connection = new WebSocket('ws://192.168.10.108:81/')
-              // //this.connection = new WebSocket('ws://' + window.location.hostname + ':81/');
-              // this.connection.onmessage = (event) => {
-              //   console.log(event.data);
-              //   //var temptime = new Date();
-              //   //console.log( temptime.getTime() - this.onrec_time);
-              //   //this.onrec_time = temptime.getTime();
-              //   get_msgs = JSON.parse(event.data)["canmsg"];
-              //   this.sortOutCanMsg( get_msgs ); 
-
-              // }
-
-              // this.connection.onopen = function(event) {
-              //   console.log(event)
-              //   console.log("Successfully connected to the echo websocket server...")
-              // }
-
-
         },
         computed: {
 
         },
         methods: {
+          sortToggle:function(){
+
+          },
+
           colorStr:function( val ){
             var setVal = val*2;
             if( setVal > 10 ){setVal=10; }
@@ -129,10 +123,6 @@ mounted() {
               this.connection = new WebSocket('ws://192.168.10.108:81/')
               //this.connection = new WebSocket('ws://' + window.location.hostname + ':81/');
               this.connection.onmessage = (event) => {
-                //console.log(event.data);
-                //var temptime = new Date();
-                //console.log( temptime.getTime() - this.onrec_time);
-                //this.onrec_time = temptime.getTime();
                 var get_msgs = JSON.parse(event.data)["canmsg"];
                 this.sortOutCanMsg( get_msgs ); 
 
@@ -159,8 +149,6 @@ mounted() {
                 var e_time = new Date();
                 var fromUpdateTime =  (e_time.getTime() - this.can_msgs[i].updatetime)/1000;
                 if( fromUpdateTime > this.can_msgs[i].cycle ){
-                  //if( e_time.getTime() - this.can_msgs[i].updatetime >= 1000 ){
-                  //this.can_msgs[i].updatecount = this.can_msgs[i].updatecount + 1;
                   this.can_msgs[i].updatecount = fromUpdateTime;                  
 
                 }
@@ -181,69 +169,43 @@ mounted() {
               console.log( getMsgs[0].rxnum,  getMsgs.length );
               //console.log( getMsgs.length );
 
-
               for( let i=1; i<getMsgs.length; i++ ){
-                // //exist_id = this.can_id_array.indexOf( getMsgs[i].id);
-                // if( i== getMsgs.length-1 ){
-                //   if( "last" in getMsgs[i] ){
-                //     return getMsgs[i].last;
-                //   }else{
-                //     return -1;
-                //   }
-                // }
                 if( "data" in getMsgs[i]){
                   var exist_id = this.can_msgs.findIndex(msg => msg.id === getMsgs[i].id);
                   var e_time;
+                  var temp_id;
+
+                  if( exist_id == -1 ){ 
+                    temp_id = this.id_num; 
+                  }else{ 
+                    temp_id = exist_id; 
+                  }
+
+                  e_time = new Date();
+                  this.can_msgs[temp_id].id = getMsgs[i].id;
+                  this.can_msgs[temp_id].dlc = getMsgs[i].dlc;
+                  this.can_msgs[temp_id].cycle  =  getMsgs[i].cycle/1000;
+                  this.can_msgs[temp_id].updatetime = e_time.getTime();
+                  this.can_msgs[temp_id].updatecount = 0;                  
+
                   if( exist_id == -1 ){ // no exist
-                    this.can_msgs[this.id_num].id = getMsgs[i].id;
-                    this.can_msgs[this.id_num].dlc = getMsgs[i].dlc;
-
-                    this.can_msgs[this.id_num].cycle  =  getMsgs[i].cycle/1000;
-                    e_time = new Date();
-                    this.can_msgs[this.id_num].updatetime = e_time.getTime();
-                    this.can_msgs[this.id_num].updatecount = 0;
-
-                    //for( let k=0; k<getMsgs[i].dlc; k++ ){
-                    this.can_msgs[this.id_num].data = Object.assign( {}, getMsgs[i].data );
-                    //}               
-
-                    this.can_msgs[this.id_num].updatecount_data = Object.assign( {}, this.can_msgs[this.id_num].updatecount_data );
-
+                    this.can_msgs[temp_id].updatecount_data = Object.assign( {}, this.can_msgs[this.id_num].updatecount_data );
                     this.id_num++;
-                    this.can_msgs_sort = this.can_msgs;
-                    this.exist_list[getMsgs[i].id] = getMsgs[i].id;
-                    this.id_list.push(getMsgs[i].id);
 
                   }
                   else{ // exist 
-
-                    this.can_msgs[exist_id].id = getMsgs[i].id;
-                    this.can_msgs[exist_id].dlc = getMsgs[i].dlc;
-                    this.can_msgs[exist_id].cycle  = getMsgs[i].cycle/1000; 
-                    e_time = new Date();
-                    this.can_msgs[exist_id].updatetime = e_time.getTime();
-                    this.can_msgs[exist_id].updatecount = 0;
-
-                    for( let j=0; j<this.can_msgs[exist_id].dlc; j++ ){
-                      if( this.can_msgs[exist_id].data[j] != getMsgs[i].data[j] ){
-                        this.can_msgs[exist_id].updatecount_data[j] = 0;
+                    for( let j=0; j<this.can_msgs[temp_id].dlc; j++ ){
+                      if( this.can_msgs[temp_id].data[j] != getMsgs[i].data[j] ){
+                        this.can_msgs[temp_id].updatecount_data[j] = 0;
                       }
                     }
-                    this.can_msgs[exist_id].data = Object.assign( {}, getMsgs[i].data );
-
-
-                    
-
-
-                  }                  
+                  }
+                  this.can_msgs[temp_id].data = Object.assign( {}, getMsgs[i].data );
+                  
                 }
                 else{ 
                   continue; 
                 }
-
-                // if( getMsgs[i].id < 100){}
-                // else{ continue; }
-
 
               }
 
@@ -276,22 +238,6 @@ mounted() {
               else  return "↑";
 
             },
-
-            // sortMsg_id: function(){
-            //   if( this.sort_target == 0 ){ this.sort_direction_id *= -1; }
-            //   this.sort_target = 0;
-            //   this.sortMsg( this.sort_target );
-            // },
-            // sortMsg_dlc: function(){
-            //   if( this.sort_target == 1 ){ this.sort_direction_dlc *= -1; }
-            //   this.sort_target = 1;
-            //   this.sortMsg( this.sort_target );
-            // },
-            // sortMsg_time: function(){
-            //   if( this.sort_target == 2 ){ this.sort_direction_time *= -1; }
-            //   this.sort_target = 2;
-            //   this.sortMsg( this.sort_target );
-            // },
 
             sortMsg: function( sort_target, direct_change ){
               if( sort_target == -1 ) return;
