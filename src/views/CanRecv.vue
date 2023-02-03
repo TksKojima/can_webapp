@@ -1,11 +1,34 @@
+
+
 <template>
-  <div class="about">
-        {{timecnt}} {{connect_status}}
+  <div>
+        <v-container >
+        <v-row>
+        <v-col cols="2" >
+          <v-switch v-model="toggle_rx_msg" :label="`CAN受信`"></v-switch>
+          <v-text-field
+            label="IDフィルタ"
+            placeholder="ex: 0x01, 0x0Y-0x0X, 0xZZ"
+            v-model="idfilter_val"
+            @blur ="idFilterInput(idfilter_val)"
+          ></v-text-field>
+
+          <v-switch v-model="toggle_sort" :label="`自動ソート: ${sortTargetStr()}   `"></v-switch>
+          <v-switch v-model="toggle_hex" :label="`16進表示`"></v-switch>
+          <v-text-field
+            :value=timecnt
+            label="動作カウント"
+            class="centered-input"
+            disabled
+          ></v-text-field>
+
+        </v-col>
+        <v-col cols="10" >
+
+        <!-- {{connect_status}} -->
           <table class="table table-hover" aria-describedby="listhelp">
               <thead>
-
                   <tr>
-
                       <th  @click="sortMsg( 0, 1 )" style="cursor:pointer" >ID  {{sort_direction_str[0]}} </th>
                       <th  @click="sortMsg( 1, 1 )" style="cursor:pointer" >dlc {{sort_direction_str[1]}} </th>
                       <th  @click="sortMsg( 2, 1 )" style="cursor:pointer">time{{sort_direction_str[2]}} </th>
@@ -25,12 +48,17 @@
               </thead>
 
               <tbody>
-                <tr v-for="n in id_num"  v-bind:key="n" >
-                  <td  v-bind:style="{color:colorStr( can_msgs[n].updatecount)}" scope="row">{{can_msgs[n].id}}</td>
-                  <td  v-bind:style="{color:colorStr( can_msgs[n].updatecount)}" > {{can_msgs[n].dlc}}</td>
-                  <td  v-bind:style="{color:colorStr( can_msgs[n].updatecount)}" > {{can_msgs[n].cycle}}</td>
-                  <td  v-for="index of 8"    v-bind:key="index"  v-bind:style="{color:colorStr( can_msgs[n].updatecount_data[index-1] )}">{{can_msgs[n].data[index-1]}}</td>
-                  <td> {{can_msgs[n].updatecount}}</td>
+                <tr v-for="(n,i) in id_num"  v-bind:key="n" >
+                  <td  v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" scope="row">
+                    {{toggleDecOrHex(can_msgs[i].id)}}</td>
+                  <td  v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" > 
+                    {{can_msgs[i].dlc}}</td>
+                  <td  v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" > 
+                    {{can_msgs[i].cycle}}</td>
+                  <td  v-for="index of 8"    v-bind:key="index"  v-bind:style="{color:colorStr( can_msgs[i].updatecount_data[index-1] )}">
+                    {{  toggleDecOrHex( can_msgs[i].data[index-1] )}} </td>
+                  <td> 
+                    {{can_msgs[i].updatecount}}</td>
 
 
                   <!--
@@ -41,14 +69,28 @@
               </tbody>
 
           </table>
+         </v-col> 
+         </v-row>
+         </v-container> 
 
 
   </div>
+
+  
 </template>
 
 
 <script>
+//import ToggleButton from 'vue-js-toggle-button'
+//import ToggleButton from './ToggleBtn.vue'
+import ReconnectingWebSocket from 'reconnecting-websocket';
 export default {
+
+  beforeRouteLeave (to, from, next) {
+    this.$destroy()
+    next()
+  },
+ 
   data() {
     return {
             selectItem: { name: "", mac: "" },
@@ -58,34 +100,40 @@ export default {
 
             onrec_time:0,
                         
-            can_msgs_sort:[],
-            can_id_array:[],
             timecnt:0,
                 //{ id: 0, dlc: 8, msg: [0,1,2,3,4,5,6,7] },
             myStyle: 'RGB(10,0,200)',
-            exist_list:[],
-            id_list:[],
-            id_list_num:0,
             id_num:0,
             sort_direction_id: 1,
             sort_direction_dlc:1,
             sort_direction_time:1,
             sort_direction_str:["↑↓","↑↓","↑↓"],
             sort_target: -1,
+            sort_target_str: ["ID","dlc","time"],
+            
             sort_cnt:0,
 
-            connect_status:-1
+            connect_status:-1,
+            toggle_sort: false,
+            toggle_rx_msg:false,
+            toggle_hex:false,
+            idfilter_val:"",
+            idfilter_list:[],
+
+            enable_rx_msg : true,
+
+            lastInterval: 0,
 
 
     }
   },
-mounted() {
+  mounted() {
               setInterval(this.intervalFunc1000, 500);
               setInterval(this.intervalFunc3000, 3000);
               console.log("Starting connection to WebSocket Server")
 
               for(let i=0; i<0x7ff; i++){
-                this.exist_list[i] = -1;
+                //this.exist_list[i] = -1;
                 //this.id_list = 0;
                 this.can_msg.id = -1;
                 this.can_msgs[i] =  Object.assign( {}, this.can_msg );
@@ -93,29 +141,30 @@ mounted() {
               
               this.websocketconnect();
 
-              // this.connection = new WebSocket('ws://192.168.10.108:81/')
-              // //this.connection = new WebSocket('ws://' + window.location.hostname + ':81/');
-              // this.connection.onmessage = (event) => {
-              //   console.log(event.data);
-              //   //var temptime = new Date();
-              //   //console.log( temptime.getTime() - this.onrec_time);
-              //   //this.onrec_time = temptime.getTime();
-              //   get_msgs = JSON.parse(event.data)["canmsg"];
-              //   this.sortOutCanMsg( get_msgs ); 
-
-              // }
-
-              // this.connection.onopen = function(event) {
-              //   console.log(event)
-              //   console.log("Successfully connected to the echo websocket server...")
-              // }
-
-
         },
         computed: {
 
         },
         methods: {
+          toggleDecOrHex:function( inputvar ){
+
+            if(inputvar==null){
+              return "";
+            }
+
+            if(inputvar==""){
+              return "";
+            }
+
+            let val = Number(inputvar)
+            if( this.toggle_hex ){
+              return val.toString(16);
+            }
+            else{
+              return val;
+            }
+          },
+
           colorStr:function( val ){
             var setVal = val*2;
             if( setVal > 10 ){setVal=10; }
@@ -125,16 +174,41 @@ mounted() {
 
           },
 
+          sortTargetStr:function(){
+            if( this.sort_target >= 0 ){
+              return this.sort_target_str[this.sort_target];
+
+            }else{
+              return "(未)";
+
+            }
+
+          },
+
           websocketconnect: function(){
-              this.connection = new WebSocket('ws://192.168.10.108:81/')
+              //this.connection = new WebSocket('ws://192.168.10.108:81/')
+
+              this.connection  = new ReconnectingWebSocket(
+                'ws://192.168.10.108:81/',
+                null, 
+                {
+                  debug: false,
+                  reconnectInterval: 3000
+                }
+              );              
               //this.connection = new WebSocket('ws://' + window.location.hostname + ':81/');
               this.connection.onmessage = (event) => {
-                //console.log(event.data);
-                //var temptime = new Date();
-                //console.log( temptime.getTime() - this.onrec_time);
-                //this.onrec_time = temptime.getTime();
-                var get_msgs = JSON.parse(event.data)["canmsg"];
-                this.sortOutCanMsg( get_msgs ); 
+                let e_time = new Date();
+                if( e_time.getTime() - this.lastInterval > 2000 ){
+                  this.enable_rx_msg = false;                  
+                }else{
+                  this.enable_rx_msg = true; 
+                }
+
+                if( this.enable_rx_msg && this.toggle_rx_msg ){
+                  var get_msgs = JSON.parse(event.data)["canmsg"];
+                  this.sortOutCanMsg( get_msgs ); 
+                }
 
               }
 
@@ -147,10 +221,16 @@ mounted() {
 
 
             intervalFunc1000:function(){
+
+              var temp_time = new Date();
+              this.lastInterval = temp_time.getTime();
+
+              
               this.connect_status = this.connection.readyState;
               if( this.connect_status !=1 ){
-                //console.log("no connect, try connect");
-                //this.websocketconnect();
+                console.log(this.connect_status);
+                // console.log("no connect, try connect");
+                // this.websocketconnect();
               }
 
               this.timecnt = this.timecnt + 1;
@@ -159,91 +239,79 @@ mounted() {
                 var e_time = new Date();
                 var fromUpdateTime =  (e_time.getTime() - this.can_msgs[i].updatetime)/1000;
                 if( fromUpdateTime > this.can_msgs[i].cycle ){
-                  //if( e_time.getTime() - this.can_msgs[i].updatetime >= 1000 ){
-                  //this.can_msgs[i].updatecount = this.can_msgs[i].updatecount + 1;
                   this.can_msgs[i].updatecount = fromUpdateTime;                  
 
                 }
                 for( let j=0; j<this.can_msgs[i].dlc; j++ ){
                     this.can_msgs[i].updatecount_data[j] = this.can_msgs[i].updatecount_data[j] +1;
                 }
-
               }
 
             },
 
             intervalFunc3000:function(){
-              this.sortMsg( this.sort_target, 0 );
+              if(this.toggle_sort){
+                this.sortMsg( this.sort_target, 0 );
+              }
 
             },
             sortOutCanMsg:function( getMsgs ){
               //console.log( getMsgs );
-              console.log( getMsgs[0].rxnum,  getMsgs.length );
-              //console.log( getMsgs.length );
-
+              //console.log( getMsgs[0].rxnum,  getMsgs.length );
+              //console.log( getMsgs.length );              
+              let idfilter_list_enable = false;
+              for( let k=0; k<this.idfilter_list.length; k++){
+                if( 0<this.idfilter_list[k] && this.idfilter_list[k]<0x800){
+                  idfilter_list_enable = true;
+                  break;
+                }
+              }
 
               for( let i=1; i<getMsgs.length; i++ ){
-                // //exist_id = this.can_id_array.indexOf( getMsgs[i].id);
-                // if( i== getMsgs.length-1 ){
-                //   if( "last" in getMsgs[i] ){
-                //     return getMsgs[i].last;
-                //   }else{
-                //     return -1;
-                //   }
-                // }
+                if( idfilter_list_enable && !this.idfilter_list.includes( getMsgs[i].id ) ){
+                  continue;
+                }
+                if( !(getMsgs[i].id > 0) ){
+                  continue;
+                }
+
                 if( "data" in getMsgs[i]){
+
                   var exist_id = this.can_msgs.findIndex(msg => msg.id === getMsgs[i].id);
                   var e_time;
+                  var temp_id;
+
+                  if( exist_id == -1 ){ 
+                    temp_id = this.id_num; 
+                  }else{ 
+                    temp_id = exist_id; 
+                  }
+                
+                  e_time = new Date();
+                  this.can_msgs[temp_id].id = getMsgs[i].id;
+                  this.can_msgs[temp_id].dlc = getMsgs[i].dlc;
+                  this.can_msgs[temp_id].cycle  =  getMsgs[i].cycle/1000;
+                  this.can_msgs[temp_id].updatetime = e_time.getTime();
+                  this.can_msgs[temp_id].updatecount = 0;                  
+
                   if( exist_id == -1 ){ // no exist
-                    this.can_msgs[this.id_num].id = getMsgs[i].id;
-                    this.can_msgs[this.id_num].dlc = getMsgs[i].dlc;
-
-                    this.can_msgs[this.id_num].cycle  =  getMsgs[i].cycle/1000;
-                    e_time = new Date();
-                    this.can_msgs[this.id_num].updatetime = e_time.getTime();
-                    this.can_msgs[this.id_num].updatecount = 0;
-
-                    //for( let k=0; k<getMsgs[i].dlc; k++ ){
-                    this.can_msgs[this.id_num].data = Object.assign( {}, getMsgs[i].data );
-                    //}               
-
-                    this.can_msgs[this.id_num].updatecount_data = Object.assign( {}, this.can_msgs[this.id_num].updatecount_data );
-
+                    this.can_msgs[temp_id].updatecount_data = Object.assign( {}, this.can_msgs[this.id_num].updatecount_data );
                     this.id_num++;
-                    this.can_msgs_sort = this.can_msgs;
-                    this.exist_list[getMsgs[i].id] = getMsgs[i].id;
-                    this.id_list.push(getMsgs[i].id);
 
                   }
                   else{ // exist 
-
-                    this.can_msgs[exist_id].id = getMsgs[i].id;
-                    this.can_msgs[exist_id].dlc = getMsgs[i].dlc;
-                    this.can_msgs[exist_id].cycle  = getMsgs[i].cycle/1000; 
-                    e_time = new Date();
-                    this.can_msgs[exist_id].updatetime = e_time.getTime();
-                    this.can_msgs[exist_id].updatecount = 0;
-
-                    for( let j=0; j<this.can_msgs[exist_id].dlc; j++ ){
-                      if( this.can_msgs[exist_id].data[j] != getMsgs[i].data[j] ){
-                        this.can_msgs[exist_id].updatecount_data[j] = 0;
+                    for( let j=0; j<this.can_msgs[temp_id].dlc; j++ ){
+                      if( this.can_msgs[temp_id].data[j] != getMsgs[i].data[j] ){
+                        this.can_msgs[temp_id].updatecount_data[j] = 0;
                       }
                     }
-                    this.can_msgs[exist_id].data = Object.assign( {}, getMsgs[i].data );
-
-
-                    
-
-
-                  }                  
+                  }
+                  this.can_msgs[temp_id].data = Object.assign( {}, getMsgs[i].data );
+                  
                 }
                 else{ 
                   continue; 
                 }
-
-                // if( getMsgs[i].id < 100){}
-                // else{ continue; }
-
 
               }
 
@@ -277,26 +345,10 @@ mounted() {
 
             },
 
-            // sortMsg_id: function(){
-            //   if( this.sort_target == 0 ){ this.sort_direction_id *= -1; }
-            //   this.sort_target = 0;
-            //   this.sortMsg( this.sort_target );
-            // },
-            // sortMsg_dlc: function(){
-            //   if( this.sort_target == 1 ){ this.sort_direction_dlc *= -1; }
-            //   this.sort_target = 1;
-            //   this.sortMsg( this.sort_target );
-            // },
-            // sortMsg_time: function(){
-            //   if( this.sort_target == 2 ){ this.sort_direction_time *= -1; }
-            //   this.sort_target = 2;
-            //   this.sortMsg( this.sort_target );
-            // },
-
             sortMsg: function( sort_target, direct_change ){
               if( sort_target == -1 ) return;
 
-              console.log('sort');
+              //console.log('sort');
               this.sort_cnt++;
 
               this.sort_direction_str = ["↑↓","↑↓","↑↓"];
@@ -326,6 +378,65 @@ mounted() {
               }
             },
 
+            idFilterInput:function (input) {
+              const ranges = input.split(',');
+              const numbers = [];
+              var numbers_ret = [];
+
+              ranges.forEach(range => {
+                const parts = range.trim().split('-').map(part => {
+                  if (part.startsWith("0x")) {
+                    return parseInt(part, 16);
+                  } else {
+                    return parseInt(part, 10);
+                  }
+                });
+                if (parts.length === 1) {
+                  numbers.push(parts[0]);
+                } else {
+                  const start = Math.min(parts[0], parts[1]);
+                  const end = Math.max(parts[0], parts[1]);
+                  for (let i = start; i <= end; i++) {
+                    numbers.push(i);
+                  }
+                }
+              });
+
+              numbers_ret =  numbers.sort((a, b) => a - b);
+
+              this.idfilter_list = numbers_ret;
+              console.log(this.idfilter_list);
+
+              this.idFilterRun();
+              
+            },
+
+            idFilterRun:function () {
+
+              var temp_enable_rx_msg = this.enable_rx_msg; //割り込み禁止�?な
+              this.enable_rx_msg = false;
+              let filter_cnt = 0;
+              for( let i=0; i<this.id_num; i++ ){
+                if( !this.idfilter_list.includes( this.can_msgs[i].id ) ){
+                  this.can_msgs[i] =  Object.assign( {}, this.can_msg );  //初期�?
+                  this.can_msgs[i].id = 2048;
+                  filter_cnt = filter_cnt + 1;
+                }
+              }
+                console.log(filter_cnt);              
+
+              var temp_sort_direction_id = this.sort_direction_id;
+              this.sort_direction_id = 1;
+              this.sortMsg( 0, 0 ); //id で�?�?ソー�?
+              this.sort_direction_id = temp_sort_direction_id; 
+              this.id_num = this.id_num - filter_cnt;
+              this.enable_rx_msg = temp_enable_rx_msg;
+
+
+            }
+
+
+
 
         }
 }
@@ -346,6 +457,14 @@ mounted() {
     border: solid 1px #ccc;
     text-align: center;
   }
+
+  .centered-input input {
+    text-align: center
+  }
+  .right-input input {
+    text-align: right;
+  }
+
   </style>
 
 

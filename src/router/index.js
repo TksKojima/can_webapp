@@ -1,23 +1,32 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import HomeView from '../views/CanRecv.vue'
+import CanRecv from '../views/CanRecv.vue'
+import Tabs from '../views/RouteTabs.vue'
+
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '/',
-    name: 'can_recv',
-    component: HomeView
+    component: Tabs
   },
   {
-    path: '/can_recv',
-    name: 'can_recv2',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
+    path: '/canrx',
+    component: CanRecv
+  },
+  {
+    path: '/tab',
+    component: Tabs,
+
+  },
+
+  {
+    path: '/cantab',
+    component: Tabs,
   }
+
+
 ]
 
 const router = new VueRouter({
