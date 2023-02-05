@@ -4,26 +4,40 @@
   <div>
         <v-container >
         <v-row>
-        <v-col cols="2" >
-          <v-switch v-model="toggle_rx_msg" :label="`CAN受信`"></v-switch>
-          <v-text-field
-            label="IDフィルタ"
-            placeholder="ex: 0x01, 0x0Y-0x0X, 0xZZ"
-            v-model="idfilter_val"
-            @blur ="idFilterInput(idfilter_val)"
-          ></v-text-field>
+          <v-col cols="12" sm="2" >
+            <v-row>
+            <v-col cols="6" sm="12">
+              <v-switch v-model="toggle_rx_msg" :label="`CAN受信`"></v-switch>
+            </v-col>
+            <v-col cols="6" sm="12">
+              <v-text-field
+                label="IDフィルタ"
+                placeholder="ex: 0x01, 0x0Y-0x0X, 0xZZ"
+                v-model="idfilter_val"
+                @blur ="idFilterInput(idfilter_val)"
+              ></v-text-field>
+            </v-col>
+          </v-row>
 
-          <v-switch v-model="toggle_sort" :label="`自動ソート: ${sortTargetStr()}   `"></v-switch>
-          <v-switch v-model="toggle_hex" :label="`16進表示`"></v-switch>
-          <v-text-field
-            :value=timecnt
-            label="動作カウント"
-            class="centered-input"
-            disabled
-          ></v-text-field>
+          <v-row>
+            <v-col cols="5" sm="12">
+              <v-switch v-model="toggle_sort" :label="`自動ソート: ${sortTargetStr()}   `"></v-switch>
+            </v-col>
+            <v-col cols="4" sm="12">
+              <v-switch v-model="toggle_hex" :label="`16進表示`"></v-switch>
+            </v-col>
+            <v-col cols="3" sm="12">
+              <v-text-field
+                :value=timecnt
+                label="動作カウント"
+                class="centered-input"
+                disabled
+              ></v-text-field>
+            </v-col>
+          </v-row>
 
         </v-col>
-        <v-col cols="10" >
+        <v-col cols="12" sm="10" >
 
         <!-- {{connect_status}} -->
           <table class="table table-hover" aria-describedby="listhelp">
@@ -446,6 +460,12 @@ export default {
   table {
     border: solid 1px #ccc;
     border-collapse:collapse;
+    font-size: 8px;
+    width: 100%;
+    table-layout: fixed;
+    word-break: break-all;
+    word-wrap: break-all;
+
   }
   th {
     padding: 0.1px 10px;
@@ -464,6 +484,14 @@ export default {
   .right-input input {
     text-align: right;
   }
+
+ 
+  @media only screen and (min-width:900px) {
+    table {
+      font-size: 14px;
+    }
+
+  }  
 
   </style>
 

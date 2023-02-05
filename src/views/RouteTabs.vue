@@ -36,7 +36,7 @@
       </template>
     </v-toolbar>
 
-    <v-tabs-items v-model="tabnum">
+    <v-tabs-items v-model="tabnum" :touchless="true">
       <v-tab-item>
         Home
       </v-tab-item>
@@ -67,9 +67,6 @@ import canrecv from './CanRecv.vue'
     components:{
         canrecv
     },
-
-
-
 
     data () {
       return {
