@@ -12,6 +12,7 @@
     "core-js": "^3.8.3",
     "reconnecting-websocket": "^4.4.0",
     "vue": "^2.6.14",
+    "vue-numeric-input": "^2.0.0",
     "vue-router": "^3.6.5",
     "vuetify": "^2.6.14"
   },

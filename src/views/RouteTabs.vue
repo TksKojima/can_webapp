@@ -50,8 +50,11 @@
       </v-tab-item>
 
       <v-tab-item>
-        {{tabnum}}
-        
+          <v-card>
+              <v-card-text>
+                <cantrans ></cantrans>
+              </v-card-text>
+          </v-card>
       </v-tab-item>
 
     </v-tabs-items>
@@ -62,10 +65,13 @@
 
 <script>
 import canrecv from './CanRecv.vue'
+import cantrans from './CanTrans.vue'
 
   export default {
     components:{
-        canrecv
+        canrecv,
+        cantrans,
+
     },
 
     data () {

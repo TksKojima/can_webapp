@@ -40,7 +40,7 @@
         <v-col cols="12" sm="10" >
 
         <!-- {{connect_status}} -->
-          <table class="table table-hover" aria-describedby="listhelp">
+          <table class="canrecv_table" aria-describedby="listhelp">
               <thead>
                   <tr>
                       <th  @click="sortMsg( 0, 1 )" style="cursor:pointer" >ID  {{sort_direction_str[0]}} </th>
@@ -242,7 +242,7 @@ export default {
               
               this.connect_status = this.connection.readyState;
               if( this.connect_status !=1 ){
-                console.log(this.connect_status);
+                //console.log(this.connect_status);
                 // console.log("no connect, try connect");
                 // this.websocketconnect();
               }
@@ -457,7 +457,7 @@ export default {
 </script>
 
 <style>
-  table {
+  .canrecv_table  {
     border: solid 1px #ccc;
     border-collapse:collapse;
     font-size: 8px;
@@ -487,7 +487,7 @@ export default {
 
  
   @media only screen and (min-width:900px) {
-    table {
+    .canrecv_table  {
       font-size: 14px;
     }
 
