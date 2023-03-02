@@ -21,7 +21,7 @@
 
       <!-- <template  v-slot:extension> -->
       <template  >
-        <v-tabs v-model="tabnum" align-with-title>
+        <v-tabs v-model="tabnum" align-with-title  >
           <!-- <v-tabs-slider color="yellow"></v-tabs-slider> -->
           <!-- <v-tab v-for="item in items" :key="item" :href="tab" >
             {{ item }}

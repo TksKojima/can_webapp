@@ -2,18 +2,39 @@
 
 <template>
 
-  <v-container fluid>
-    <v-row>
-        <v-flex xs12  style="overflow-y: scroll; height: 55vh ">
+  <v-container fluid  no-gutters dense   pa-0 ma-0  >
+ 
+    <v-row  no-gutters dense   pa-10 ma-10 >
+        <v-col cols="3"  >
+          <v-spacer />
+        </v-col>
+        <v-col cols="1"  >
+          <v-switch class="ma-0 pa-0" label="hex(0x**)" dense v-model="tx_msg_show_hex" :style="{padding: 0}"  />
+        </v-col>
+        <v-col cols="5"  >
+          <v-spacer />
+        </v-col>
+        <v-col cols="2"  >
+          <v-switch class="ma-0 pa-0" label="RunTrans" dense :style="{padding: 0}" />
+        </v-col>
+        <v-col cols="1">
+          <v-switch class="ma-0 pa-0" label="DelConfirm" dense  :style="{padding: 0}" />
+        </v-col>
+
+        <v-flex xs12  style="overflow-y: scroll; height: 50vh ">
         <!-- 上半分のコンテンツ -->
         <v-data-table
             v-model="select_row_data"
             :headers="headers"
+            height="50vh"
+            fixed-header
             :items="tx_msgs"
             :items-per-page="-1"
             hide-default-footer
             @click:row="onClickSelectRow"
-            class="elevation-1"
+            class="cantrans_table"
+            dense
+  
         >
         <!-- sort-by="id" -->
         <!--  -->
@@ -37,13 +58,16 @@
             <v-switch
             @click="editBtnOn(item, index)"                   
                 v-model="item.edit_select"
-                inset
                 small   
             ></v-switch>
         </template>
 
         <template v-slot:[`item.trans`]>
             <v-switch></v-switch>
+        </template>
+
+        <template v-for="index in [0,1,2,3,4,5,6,7]" v-slot:[`item.data.${index}`]="{ item }">
+          {{ toShowHex(item, index) }} 
         </template>
 
         <template v-slot:[`item.delete`]="{ item  }">
@@ -62,12 +86,12 @@
 
       <v-flex xs12 style="height: 20vh; width: 100%; margin: 2%; ">
         <!-- 下半分のコンテンツ -->
-        <v-row  align-content="center">
+        <v-row  align-content="center" >
             <v-col cols="12" sm="6" md="1">
                 <v-btn
                     color="primary"
                     dark
-                    class="mb-2"
+                    class="mt-3"
                     small
                     :disabled="now_edit"
                     @click="new_msg">
@@ -103,8 +127,8 @@
                 ></v-text-field>
             </v-col>
             <v-col v-for="n in 8" :key="n" cols="12" md="1">
-                <v-card @click="editDataClick(n-1)" :color="editDataColor[n-1]" >
-                    <v-card-text  class="text-right">
+                <v-card   @click="editDataClick(n-1, true)" :color="editDataClick_selectColor(n-1)" >
+                    <v-card-text  class="text-right  py-1" >
                       {{editData.data[n-1]}}
                       <br>
                       0x {{editData.data[n-1].toString(16)}}
@@ -113,11 +137,12 @@
                 </v-card>
             </v-col> 
         </v-row>
-        <v-row>
+
+        <v-row class="ma-0 pa-0"  >
         <v-col  cols="3">
-            <v-radio-group row v-model.number="inputPhysData_type" >
-            <v-radio label="Intel"    :value=0></v-radio>
-            <v-radio label="Motorola"  :value=1></v-radio>
+            <v-radio-group row v-model.number="endian_type" @change="endian_select" >
+            <v-radio label="Intel"    @change="endian_select" :value=0></v-radio>
+            <v-radio label="Motorola"  @change="endian_select"  :value=1></v-radio>
             <!-- <v-radio label=" 2進"  value="radio-3"></v-radio> -->
             </v-radio-group>
         </v-col>
@@ -184,7 +209,7 @@
          </v-col>
          <v-col  cols="1">
           <v-text-field
-              label=""
+              label="論理値(hex)"
               v-model="inputLogiData_hex"
               readonly 
           ></v-text-field>
@@ -235,12 +260,13 @@
       select_row_data:[],
       edit_index:-1,
       tx_msgs:[
-        { edit_select:false, canid:0, dlc:3, cycle:100, data:[0,1,2,3,4,5,6,7] },
+        { edit_select:false, canid:0, dlc:3, cycle:100, data:["0","1","2","3","4","5","6","7"] },
         { edit_select:false, canid:1, dlc:4, cycle:101, data:[10,1,2,4,4,5,6,7] },
         { edit_select:false, canid:2, dlc:5, cycle:102, data:[20,1,2,5,4,5,6,7] },
         { edit_select:false, canid:3, dlc:6, cycle:103, data:[30,1,2,6,4,5,6,7] },
       ],
       tx_msg_init:{ edit_select:false, canid:2048, dlc:1, cycle:1000, data:[0,0,0,0, 0,0,0,0] },
+      tx_msg_show_hex: false,
       now_edit:false,
       editedIndex: -1,
       editBtnStr:["New Msg","Check Msg"],
@@ -265,7 +291,7 @@
       inputCanId:[ 0, 0 ],
       inputCycle:[ 0, 0 ],
       
-      inputPhysData_type: 1, // 0:hex, 1:dec, 2:dec&gain&factor
+      endian_type: 1, // 0:hex, 1:dec, 2:dec&gain&factor
       inputPhysData_factor:[1,1],
       inputPhysData_offset:[0,0],
       inputPhysData_step: [1 , 0],
@@ -314,6 +340,10 @@
             }
             this.inputCanId[0] = this.editData.canid
             this.inputCycle[0] = this.editData.cycle
+            for( let i=0; i<8; i++){
+              this.editDataSelect[i] = false
+            }
+            this.editDataSelect.splice();
 
 
             this.now_edit = item.edit_select 
@@ -389,8 +419,8 @@
 
         },
 
-        editDataClick( index ) {
-          this.editDataClick_select( index )
+        editDataClick( index, isToggle ) {
+          this.editDataClick_select( index, isToggle )
           this.editDataClick_input()          
           this.inputLogiData_val[0] = this.editData_selected_val
           this.inputLogiData_hex = this.dec2hex_0x_string( this.inputLogiData_val[0] )
@@ -399,8 +429,10 @@
 
         },
 
-        editDataClick_select( index ) {
-            this.editDataSelect[ index ] = !this.editDataSelect[ index ] // reverse T/F
+        editDataClick_select( index, isToggle ) {
+            if( isToggle == true ){
+              this.editDataSelect[ index ] = !this.editDataSelect[ index ] // reverse T/F
+            }
 
             //クリックしたところから隣り合うTrueはそのまま、飛び石になっているところはFlase
             var false_flag = 0
@@ -434,23 +466,28 @@
                 }
               }
             }
-
-            //色を変える
-            for( let i=0; i<8; i++ ){
-              if (  this.editDataSelect[ i ]  == false){
-                this.editDataColor[ i ] = 'white'
-              }
-              else{
-                this.editDataColor[ i ] = '#ccf'
-              }
-            }
-            this.editDataColor.splice();
-
+          
         },
+        // //色を変える
+        editDataClick_selectColor(i){
+          if (  this.editDataSelect[ i ]  == false){
+            return 'white'
+          }else{
+            return '#ccf'
+
+          }
+        },
+
         editDataClick_input() {
           var cnt = 0
           var retval = 0;
-          for( let i=0; i<8; i++ ){
+          var i;
+          for( let k=0; k<8; k++ ){
+            if( this.endian_type == 0 ){
+              i = k
+            } else{
+              i = 8-k
+            }
             if( this.editDataSelect[ i ] == true ){
               retval += ( this.editData.data[i] << (8*cnt) )
               cnt++
@@ -459,14 +496,7 @@
           this.editData_selected_val = retval
           
         },
-        inputPhysData_calc(){
-          for( let i=0; i<8; i++ ){
-            if( this.editDataSelect == true ){
-              //this.inputPhysData_val[0] = this.input_logical2pysical( this.inputLogiData_val[0] )
-//              this.inputPhysData_val[0] = this.input_logical2pysical( this.editData_selected_val )
-            }
-          }
-          
+        inputPhysData_calc(){          
           this.inputLogiData_val[0] = this.input_pysical2logical( this.inputPhysData_val[0]  ) // ( Number( this.inputPhysData_val[0] ) + Number( this.inputPhysData_offset[0] ) ) / Number( this.inputPhysData_factor[0] )
           this.inputLogiData_hex = this.dec2hex_0x_string( this.inputLogiData_val[0] )
           this.editDataUpdate( this.inputLogiData_val[0] )
@@ -480,11 +510,15 @@
         },
         editDataUpdate( val ){
           var cnt = 0
-          var k = 0
-          for( let i=0; i<8; i++ ){
-            k = i
-            if( this.editDataSelect[k] == true ){
-              this.editData.data[k] = ( val >> (cnt*8) ) & 0xff
+          var i = 0
+          for( let k=0; k<8; k++ ){
+            if( this.endian_type == 0 ){
+              i = k
+            } else{
+              i = 8-k
+            }
+            if( this.editDataSelect[i] == true ){
+              this.editData.data[i] = ( val >> (cnt*8) ) & 0xff
               cnt++
             }
           }
@@ -558,6 +592,23 @@
             return false;
           }
         },
+        toShowHex( item, index ) {
+          if( this.tx_msg_show_hex ){
+            return item.data[index].toString(16);
+          } else{
+            return item.data[index].toString(10);
+          }
+        },
+
+        endian_select(){
+          this.editDataClick_input()          
+          this.inputLogiData_val[0] = this.editData_selected_val
+          this.inputLogiData_hex = this.dec2hex_0x_string( this.inputLogiData_val[0] )
+          this.inputPhysData_val[0] = this.input_logical2pysical( this.editData_selected_val )
+          console.log("test")
+
+
+        }
 
     },
   }
@@ -566,6 +617,14 @@
 
 
 <style>
+
+      .cantrans_table td:nth-child(4),
+      .cantrans_table th:nth-child(4), 
+      .cantrans_table td:nth-child(12),
+      .cantrans_table th:nth-child(12)       
+      {
+        border-right: 2px solid #ccc;
+      } 
       .center-input input {
         text-align: center;
       }

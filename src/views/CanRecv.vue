@@ -41,21 +41,20 @@
 
         <!-- {{connect_status}} -->
           <table class="canrecv_table" aria-describedby="listhelp">
-              <thead>
+              <thead class="canrecv_th" >
                   <tr>
-                      <th  @click="sortMsg( 0, 1 )" style="cursor:pointer" >ID  {{sort_direction_str[0]}} </th>
-                      <th  @click="sortMsg( 1, 1 )" style="cursor:pointer" >dlc {{sort_direction_str[1]}} </th>
-                      <th  @click="sortMsg( 2, 1 )" style="cursor:pointer">time{{sort_direction_str[2]}} </th>
-
-                      <th>data0</th>
-                      <th>data1</th>
-                      <th>data2</th>
-                      <th>data3</th>
-                      <th>data4</th>
-                      <th>data5</th>
-                      <th>data6</th>
-                      <th>data7</th>
-                      <th>delay</th>
+                      <th class="canrecv_th"   @click="sortMsg( 0, 1 )" style="cursor:pointer" >ID  {{sort_direction_str[0]}} </th>
+                      <th class="canrecv_th"   @click="sortMsg( 1, 1 )" style="cursor:pointer" >dlc {{sort_direction_str[1]}} </th>
+                      <th class="canrecv_th"   @click="sortMsg( 2, 1 )" style="cursor:pointer">time{{sort_direction_str[2]}} </th>
+                      <th class="canrecv_th" >data0</th>
+                      <th class="canrecv_th" >data1</th>
+                      <th class="canrecv_th" >data2</th>
+                      <th class="canrecv_th" >data3</th>
+                      <th class="canrecv_th" >data4</th>
+                      <th class="canrecv_th" >data5</th>
+                      <th class="canrecv_th" >data6</th>
+                      <th class="canrecv_th" >data7</th>
+                      <th class="canrecv_th" >delay</th>
 
                   </tr>
                    
@@ -63,15 +62,15 @@
 
               <tbody>
                 <tr v-for="(n,i) in id_num"  v-bind:key="n" >
-                  <td  v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" scope="row">
+                  <td  class="canrecv_td" v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" scope="row">
                     {{toggleDecOrHex(can_msgs[i].id)}}</td>
-                  <td  v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" > 
+                  <td  class="canrecv_td" v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" > 
                     {{can_msgs[i].dlc}}</td>
-                  <td  v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" > 
+                  <td  class="canrecv_td" v-bind:style="{color:colorStr( can_msgs[i].updatecount)}" > 
                     {{can_msgs[i].cycle}}</td>
-                  <td  v-for="index of 8"    v-bind:key="index"  v-bind:style="{color:colorStr( can_msgs[i].updatecount_data[index-1] )}">
+                  <td  class="canrecv_td" v-for="index of 8"    v-bind:key="index"  v-bind:style="{color:colorStr( can_msgs[i].updatecount_data[index-1] )}">
                     {{  toggleDecOrHex( can_msgs[i].data[index-1] )}} </td>
-                  <td> 
+                  <td class="canrecv_td" > 
                     {{can_msgs[i].updatecount}}</td>
 
 
@@ -467,12 +466,12 @@ export default {
     word-wrap: break-all;
 
   }
-  th {
+  .canrecv_th {
     padding: 0.1px 10px;
     border: solid 1px #ccc;
     background-color: #eee;
   }
-  td {
+  .canrecv_td {
     padding: 1px;
     border: solid 1px #ccc;
     text-align: center;
