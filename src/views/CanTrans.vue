@@ -5,7 +5,22 @@
   <v-container fluid  no-gutters dense   pa-0 ma-0  >
  
     <v-row  no-gutters dense   pa-10 ma-10 >
-        <v-col cols="3"  >
+        <v-col cols="1" @click="save_tx_msg" >
+          <v-icon
+          @click.stop="save_tx_msg"
+            >
+            mdi-content-save
+          </v-icon> 
+          save
+        </v-col>              
+        <v-col cols="1"  @click="load_tx_msg" >
+          <v-icon
+              @click.stop="load_tx_msg"
+            >
+            mdi-download-multiple
+            </v-icon> load
+        </v-col>              
+        <v-col cols="1"  >
           <v-spacer />
         </v-col>
         <v-col cols="1"  >
@@ -15,10 +30,10 @@
           <v-spacer />
         </v-col>
         <v-col cols="2"  >
-          <v-switch class="ma-0 pa-0" label="RunTrans" dense :style="{padding: 0}" />
+          <v-switch class="ma-0 pa-0" label="CAN送信" dense v-model="runTrans_flag" :style="{padding: 0}" />
         </v-col>
         <v-col cols="1">
-          <v-switch class="ma-0 pa-0" label="DelConfirm" dense  :style="{padding: 0}" />
+          <v-switch class="ma-0 pa-0" label="DelConfirm" dense v-model="delConfirm_flag"   :style="{padding: 0}" />
         </v-col>
 
         <v-flex xs12  style="overflow-y: scroll; height: 50vh ">
@@ -31,7 +46,6 @@
             :items="tx_msgs"
             :items-per-page="-1"
             hide-default-footer
-            @click:row="onClickSelectRow"
             class="cantrans_table"
             dense
   
@@ -62,12 +76,20 @@
             ></v-switch>
         </template>
 
-        <template v-slot:[`item.trans`]>
-            <v-switch></v-switch>
+        <template v-slot:[`item.trans`]="{ item, index }">
+            <v-switch
+              @click="transBtnOn(item, index)"                   
+                v-model="item.trans"
+                small              
+            ></v-switch>
+        </template>
+
+        <template v-slot:[`item.canid`]="{ item }">
+          {{ toShowHexId(item.canid) }} 
         </template>
 
         <template v-for="index in [0,1,2,3,4,5,6,7]" v-slot:[`item.data.${index}`]="{ item }">
-          {{ toShowHex(item, index) }} 
+          {{ toShowHexData(item, index) }} 
         </template>
 
         <template v-slot:[`item.delete`]="{ item  }">
@@ -101,7 +123,7 @@
             <v-col cols="12" sm="6" md="1">
                 <v-text-field
                     v-model="inputCanId[0]"
-                    label="id"
+                    :label= "toShowHexEditId(inputCanId[0])"
                     @click="numberEdit_start( inputCanId )"
                     @change="numberEdit_update( inputCanId );
                                        editCanIdCycle_update()"
@@ -228,12 +250,17 @@
 <script>
 
 // import VueNumericInput from 'vue-numeric-input'
+import axios from 'axios';
 
   export default {
     // components: {
     //   VueNumericInput
     // },    
     data: () => ({
+      postheaders: {
+        'Content-Type': 'application/json;charset=UTF-8',
+        'Access-Control-Allow-Origin': '*',
+      },
       dialog: false,
       dialogDelete: false,
       headers: [
@@ -241,14 +268,14 @@
         { text: 'ID',    value: 'canid' },
         { text: 'dlc',   value: 'dlc' },
         { text: 'cycle', value: 'cycle' },
-        { text: 'data0', value: 'data.0' },
-        { text: 'data1', value: 'data.1' },
-        { text: 'data2', value: 'data.2' },
-        { text: 'data3', value: 'data.3' },
-        { text: 'data4', value: 'data.4' },
-        { text: 'data5', value: 'data.5' },
-        { text: 'data6', value: 'data.6' },
-        { text: 'data7', value: 'data.7' },
+        { text: 'data0', align: 'right', value: 'data.0' },
+        { text: 'data1', align: 'right', value: 'data.1' },
+        { text: 'data2', align: 'right', value: 'data.2' },
+        { text: 'data3', align: 'right', value: 'data.3' },
+        { text: 'data4', align: 'right', value: 'data.4' },
+        { text: 'data5', align: 'right', value: 'data.5' },
+        { text: 'data6', align: 'right', value: 'data.6' },
+        { text: 'data7', align: 'right', value: 'data.7' },
         { text: 'transmit',  value: 'trans'},
         { text: '',  value: 'delete'},
       ],
@@ -260,24 +287,26 @@
       select_row_data:[],
       edit_index:-1,
       tx_msgs:[
-        { edit_select:false, canid:0, dlc:3, cycle:100, data:["0","1","2","3","4","5","6","7"] },
-        { edit_select:false, canid:1, dlc:4, cycle:101, data:[10,1,2,4,4,5,6,7] },
-        { edit_select:false, canid:2, dlc:5, cycle:102, data:[20,1,2,5,4,5,6,7] },
-        { edit_select:false, canid:3, dlc:6, cycle:103, data:[30,1,2,6,4,5,6,7] },
+        { edit_select:false, canid:10, dlc:3, cycle:100, data:[10,1,2,4,4,5,6,7],  trans:0 },
+        // { edit_select:false, canid:1, dlc:4, cycle:101, data:[10,1,2,4,4,5,6,8],  trans:0 },
+        // { edit_select:false, canid:2, dlc:5, cycle:102, data:[20,1,2,5,4,5,6,9],  trans:0 },
+        // { edit_select:false, canid:3, dlc:6, cycle:103, data:[30,1,2,6,4,5,6,71], trans:0 },
       ],
-      tx_msg_init:{ edit_select:false, canid:2048, dlc:1, cycle:1000, data:[0,0,0,0, 0,0,0,0] },
+      tx_msg_init:{ edit_select:false, canid:2048, dlc:8, cycle:1000, data:[0,0,0,0, 0,0,0,0] },
       tx_msg_show_hex: false,
+      runTrans_flag:false,
+      delConfirm_flag:true,
       now_edit:false,
       editedIndex: -1,
       editBtnStr:["New Msg","Check Msg"],
 
       editData: {
-        canid: "2048",
-        dlc: "8",
-        cycle: "1000",
+        canid: 2048,
+        dlc: 8,
+        cycle: 1000,
         data: [0,0,0,0, 0,0,0,0],
       },
-      editDataTemp: {
+      editDataNoLink: {
         canid: "-",
         dlc: "-",
         cycle: "-",
@@ -320,6 +349,8 @@
 
     created () {
       this.initialize()
+      setInterval(this.intervalFunc1000, 1000);
+
     },
 
     methods: {
@@ -327,12 +358,26 @@
           this.inputCanId[0] = this.editData.canid;
           this.inputCycle[0] = this.editData.cycle;
 
-        },
-        onClickSelectRow() {
-
+        },        
+        transBtnOn(item, index){
+          if( item.trans == true ){
+            this.tx_msgs[index].trans = 1
+          }else{
+            this.tx_msgs[index].trans = 0
+          }
+        
         },
         editBtnOn(item, index){
+
+          for( let i=0; i<8; i++){
+            if( item.dlc <= i ){
+              item.data[i] = 0;
+            }
+          }
+
+          if( item.edit_select  == true ){
             this.editData = item;
+
             for( let i=0; i<this.tx_msgs.length; i++ ){
                 if( i!= index){
                     this.tx_msgs[i].edit_select = false;
@@ -345,9 +390,19 @@
             }
             this.editDataSelect.splice();
 
+          }else{
+            this.editData = this.editDataNoLink;
+            this.editData.canid = item.canid
+            this.editData.dlc = item.dlc
+            this.editData.cycle = item.cycle
+            for( let i=0; i<8; i++){
+              this.editDataSelect[i] = false
+              this.editData.data[i] = item.data[i]
+            }
 
-            this.now_edit = item.edit_select 
-            console.log(item );
+          }
+          this.editData.data.splice();
+          this.now_edit = item.edit_select 
 
         },
 
@@ -367,7 +422,11 @@
             this.editedIndex = this.tx_msgs.indexOf(item)
             this.editedItem = Object.assign({}, item)
             console.log(this.editedIndex )   
-            this.dialogDelete = true
+            if( this.delConfirm_flag ){
+              this.dialogDelete = true
+            }else{
+              this.deleteItemConfirm() 
+            }
         },
 
         deleteItemConfirm () {
@@ -403,6 +462,7 @@
         new_msg(){
 
           let tempmsg = Object.assign({}, this.tx_msg_init)
+
           if( Number.isInteger(this.editData.canid)  ){
             tempmsg.canid = this.editData.canid
           }
@@ -412,9 +472,11 @@
           if( Number.isInteger(this.editData.cycle)  ){
             tempmsg.cycle = this.editData.cycle
           }
-          for( let i=0; i<8; i++ ){
-            tempmsg.data[i] = this.editData.data[i]
-          }
+          // for( let i=0; i<8; i++ ){
+          //   tempmsg.data[i] = this.editData.data[i]
+          // }
+          tempmsg.data = this.editData.data.slice()
+          //tempmsg.data = Object.assign({}, this.editData.data)
           this.tx_msgs.unshift( tempmsg )
 
         },
@@ -486,7 +548,7 @@
             if( this.endian_type == 0 ){
               i = k
             } else{
-              i = 8-k
+              i = 7-k
             }
             if( this.editDataSelect[ i ] == true ){
               retval += ( this.editData.data[i] << (8*cnt) )
@@ -515,7 +577,7 @@
             if( this.endian_type == 0 ){
               i = k
             } else{
-              i = 8-k
+              i = 7-k
             }
             if( this.editDataSelect[i] == true ){
               this.editData.data[i] = ( val >> (cnt*8) ) & 0xff
@@ -592,23 +654,98 @@
             return false;
           }
         },
-        toShowHex( item, index ) {
+        toShowHexId( _canid ) {
+          if( this.tx_msg_show_hex ){
+            return _canid.toString(16);
+          } else{
+            return _canid.toString(10);
+          }
+        },
+        toShowHexEditId( _canid0 ) {
+          var _canid
+          if( this.isString(_canid0) ){
+            _canid =  parseInt( _canid0 )
+          }else{
+            _canid =  _canid0 
+
+          }
+
+          return  "ID: 0x" + _canid.toString(16);
+
+        },        
+        toShowHexData( item, index ) {
+          if( item.dlc <= index ){
+            return ""
+          }
           if( this.tx_msg_show_hex ){
             return item.data[index].toString(16);
           } else{
             return item.data[index].toString(10);
           }
         },
-
         endian_select(){
           this.editDataClick_input()          
           this.inputLogiData_val[0] = this.editData_selected_val
           this.inputLogiData_hex = this.dec2hex_0x_string( this.inputLogiData_val[0] )
           this.inputPhysData_val[0] = this.input_logical2pysical( this.editData_selected_val )
           console.log("test")
+        },
+        async sendData() {
+            //const dat = [{ id: 100, cycle: 100, data: [0, 1, 2, 3, 4,5,6,7] }];
+            //console.log(this.tx_msgs);
+            await axios
+              .post('http://192.168.10.108/post', this.tx_msgs)
+              .then((res) => {                
+                console.log(res);
+                this.posts = res.data.posts;
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+           
+        },
 
+        save_tx_msg(){
+          let ret = confirm("変数の保存をしますか？");
+          if( ret==false ) return ;
+          let save_tx_msgs;
+          save_tx_msgs = this.tx_msgs;
+          // for(let i=0; i<save_tx_msgs.length; i++){
+          //   save_tx_msgs[i].edit_select = false;
+          //   save_tx_msgs[i].trans = 0;
+          // }
+
+          let tx_msgs_json = JSON.stringify( save_tx_msgs, undefined, 1);
+          localStorage.setItem( "tx_msgs", tx_msgs_json);
+          console.log(save_tx_msgs);
+        },
+        load_tx_msg(){
+          let ret = confirm("変数のロードをしますか？");
+          if( ret==false ) return ;
+          // this.tx_msgs = localStorage.getItem("tx_msgs");
+          // console.log(this.tx_msgs);
+          let tx_msgs_json = localStorage.getItem('tx_msgs');
+          this.tx_msgs = JSON.parse(tx_msgs_json);
+          for(let i=0; i<this.tx_msgs.length; i++){
+            this.tx_msgs[i].edit_select = false;
+            this.tx_msgs[i].trans = 0;
+          }
+          this.now_edit = false
+
+          console.log( this.tx_msgs );
+
+          //console.log(localStorage.getItem("tx_msgs"));
+        },
+
+        intervalFunc1000(){
+          if( this.runTrans_flag ){
+            this.sendData() 
+            console.log( this.tx_msgs );
+          }
 
         }
+
+
 
     },
   }
@@ -624,11 +761,11 @@
       .cantrans_table th:nth-child(12)       
       {
         border-right: 2px solid #ccc;
-      } 
+      }      
       .center-input input {
         text-align: center;
       }
       .text-right {
         text-align: right;
-        }      
+      }      
 </style>
