@@ -37,7 +37,7 @@
         </v-col>
 
         <v-flex xs12  style="overflow-y: scroll; height: 50vh ">
-        <!-- 上半分のコンテンツ -->
+        <!-- 上半�?のコン�?ン�? -->
         <v-data-table
             v-model="select_row_data"
             :headers="headers"
@@ -107,7 +107,7 @@
 
 
       <v-flex xs12 style="height: 20vh; width: 100%; margin: 2%; ">
-        <!-- 下半分のコンテンツ -->
+        <!-- 下半�?のコン�?ン�? -->
         <v-row  align-content="center" >
             <v-col cols="12" sm="6" md="1">
                 <v-btn
@@ -201,7 +201,7 @@
           <v-col  cols="3">
             <!-- <vue-numeric-input  v-model="value" :min="1" :max="10" :step="2"></vue-numeric-input> -->
             <v-text-field
-              label="物理値 ( 論理値 × Factor + Offset )"
+              label="物�?値 ( 論理値 �? Factor + Offset )"
               class="center-input"
               v-model.number="inputPhysData_val[0]"
               @change="inputPhysData_calc"
@@ -251,11 +251,12 @@
 
 // import VueNumericInput from 'vue-numeric-input'
 import axios from 'axios';
+//import wificonfig from './WifiConfig';
 
   export default {
     // components: {
-    //   VueNumericInput
-    // },    
+    //   wificonfig
+    // },
     data: () => ({
       postheaders: {
         'Content-Type': 'application/json;charset=UTF-8',
@@ -292,7 +293,7 @@ import axios from 'axios';
         // { edit_select:false, canid:2, dlc:5, cycle:102, data:[20,1,2,5,4,5,6,9],  trans:0 },
         // { edit_select:false, canid:3, dlc:6, cycle:103, data:[30,1,2,6,4,5,6,71], trans:0 },
       ],
-      tx_msg_init:{ edit_select:false, canid:2048, dlc:8, cycle:1000, data:[0,0,0,0, 0,0,0,0] },
+      tx_msg_init:{ edit_select:false, canid:2047, dlc:8, cycle:1000, data:[0,0,0,0, 0,0,0,0] },
       tx_msg_show_hex: false,
       runTrans_flag:false,
       delConfirm_flag:true,
@@ -301,7 +302,7 @@ import axios from 'axios';
       editBtnStr:["New Msg","Check Msg"],
 
       editData: {
-        canid: 2048,
+        canid: 2047,
         dlc: 8,
         cycle: 1000,
         data: [0,0,0,0, 0,0,0,0],
@@ -328,6 +329,7 @@ import axios from 'axios';
       OutputData : 0,
       inputLogiData_val:[0, 0],
       inputLogiData_hex:0,
+      esp32url:"",
 
 
     }),
@@ -350,6 +352,7 @@ import axios from 'axios';
     created () {
       this.initialize()
       setInterval(this.intervalFunc1000, 1000);
+      this.esp32url = this.$_getGlobalUrl();
 
     },
 
@@ -496,9 +499,9 @@ import axios from 'axios';
               this.editDataSelect[ index ] = !this.editDataSelect[ index ] // reverse T/F
             }
 
-            //クリックしたところから隣り合うTrueはそのまま、飛び石になっているところはFlase
+            //クリ�?クしたところから隣り合�?Trueはそ�?�まま�?飛�?�石になって�?るところはFlase
             var false_flag = 0
-            //trueになった場合
+            //trueになった�?��?
             if( this.editDataSelect[ index ] == true ){
               false_flag = 0; 
               for( let i=index; i<8; i++ ){
@@ -520,7 +523,7 @@ import axios from 'axios';
               }
             }
 
-            //falseになった場合
+            //falseになった�?��?
             if( this.editDataSelect[ index ] == false ){              
               if( this.editDataSelect[ index -1 ] == true && this.editDataSelect[ index +1 ] == true ) {
                 for( let i=0; i<8; i++ ){
@@ -530,7 +533,7 @@ import axios from 'axios';
             }
           
         },
-        // //色を変える
+        // //色を変え�?
         editDataClick_selectColor(i){
           if (  this.editDataSelect[ i ]  == false){
             return 'white'
@@ -694,7 +697,7 @@ import axios from 'axios';
             //const dat = [{ id: 100, cycle: 100, data: [0, 1, 2, 3, 4,5,6,7] }];
             //console.log(this.tx_msgs);
             await axios
-              .post('http://192.168.10.108/post', this.tx_msgs)
+              .post( this.$_getGlobalUrl() + 'post' , this.tx_msgs)
               .then((res) => {                
                 console.log(res);
                 this.posts = res.data.posts;
@@ -706,7 +709,7 @@ import axios from 'axios';
         },
 
         save_tx_msg(){
-          let ret = confirm("変数の保存をしますか？");
+          let ret = confirm("変数の保存をしますか?�?");
           if( ret==false ) return ;
           let save_tx_msgs;
           save_tx_msgs = this.tx_msgs;
@@ -720,7 +723,7 @@ import axios from 'axios';
           console.log(save_tx_msgs);
         },
         load_tx_msg(){
-          let ret = confirm("変数のロードをしますか？");
+          let ret = confirm("変数のロードをしますか?�?");
           if( ret==false ) return ;
           // this.tx_msgs = localStorage.getItem("tx_msgs");
           // console.log(this.tx_msgs);

@@ -26,19 +26,22 @@
           <!-- <v-tab v-for="item in items" :key="item" :href="tab" >
             {{ item }}
           </v-tab> -->
-          <v-tab  > Home </v-tab>    
+          <v-tab  > WiFiConfig   </v-tab>
           <v-tab  > CanRx   </v-tab>
           <v-tab  > CanTx  </v-tab>
           <v-tab  > Plot  </v-tab>
-          <v-tab  > Config  </v-tab>
 
         </v-tabs>
       </template>
     </v-toolbar>
 
     <v-tabs-items v-model="tabnum" :touchless="true">
-      <v-tab-item>
-        Home
+      <v-tab-item>        
+          <v-card>
+              <v-card-text>
+                <wificonfig ></wificonfig>
+              </v-card-text>
+          </v-card>
       </v-tab-item>
 
       <v-tab-item>        
@@ -66,11 +69,13 @@
 <script>
 import canrecv from './CanRecv.vue'
 import cantrans from './CanTrans.vue'
+import wificonfig from './WifiConfig.vue'
 
   export default {
     components:{
         canrecv,
         cantrans,
+        wificonfig
 
     },
 

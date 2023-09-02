@@ -7,7 +7,7 @@
           <v-col cols="12" sm="2" >
             <v-row>
             <v-col cols="6" sm="12">
-              <v-switch v-model="toggle_rx_msg" :label="`CAN受信`"></v-switch>
+              <v-switch v-model="toggle_rx_msg" :label="`CAN受信`"  @click="websocketconnect()"></v-switch>
             </v-col>
             <v-col cols="6" sm="12">
               <v-text-field
@@ -97,6 +97,8 @@
 //import ToggleButton from 'vue-js-toggle-button'
 //import ToggleButton from './ToggleBtn.vue'
 import ReconnectingWebSocket from 'reconnecting-websocket';
+//import wificonfig from './WifiConfig.vue';
+
 export default {
 
   beforeRouteLeave (to, from, next) {
@@ -141,9 +143,6 @@ export default {
     }
   },
   mounted() {
-              setInterval(this.intervalFunc1000, 500);
-              setInterval(this.intervalFunc3000, 3000);
-              console.log("Starting connection to WebSocket Server")
 
               for(let i=0; i<0x7ff; i++){
                 //this.exist_list[i] = -1;
@@ -152,7 +151,7 @@ export default {
                 this.can_msgs[i] =  Object.assign( {}, this.can_msg );
               }
               
-              this.websocketconnect();
+              //this.websocketconnect();
 
         },
         computed: {
@@ -161,6 +160,12 @@ export default {
         methods: {
           toggleDecOrHex:function( inputvar ){
 
+            if(inputvar=="0"){
+              return 0;
+            }
+            if(inputvar==0){
+              return 0;
+            }                        
             if(inputvar==null){
               return "";
             }
@@ -200,9 +205,22 @@ export default {
 
           websocketconnect: function(){
               //this.connection = new WebSocket('ws://192.168.10.108:81/')
+              console.log("Starting connection to WebSocket Server")
+              console.log("can rx test");
+              //console.log( this.$_getGlobalUrl() );
+              console.log( this.$_getGlobalEsp32ip() );
+
+              //const urlString = this.$_getGlobalUrl();
+              //const startIndex = urlString.indexOf("//") + 2; // プロトコル部分をスキップ
+              //const endIndex = urlString.indexOf("/", startIndex); // ホスト名の終わりを検索
+              //const hostname2 = urlString.substring(startIndex);
+              const hostname = this.$_getGlobalEsp32ip()+':81/';
+
+              //console.log(hostname2);
+              console.log(hostname);
 
               this.connection  = new ReconnectingWebSocket(
-                'ws://192.168.10.108:81/',
+                'ws://'+hostname, //'ws://192.168.10.108:81/',
                 null, 
                 {
                   debug: false,
@@ -229,6 +247,9 @@ export default {
                 console.log(event)
                 console.log("Successfully connected to the echo websocket server...")
               }
+              setInterval(this.intervalFunc1000, 500);
+              setInterval(this.intervalFunc3000, 3000);
+
 
           },
 
